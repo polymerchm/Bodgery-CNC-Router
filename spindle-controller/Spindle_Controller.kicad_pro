@@ -657,7 +657,7 @@
         "uuid": "10c7a81d-d8e0-4023-94dc-af5199d847de"
       }
     ],
-    "used_designators": "J20-21",
+    "used_designators": "J17-18,J20-21,J27-37,SW2",
     "variants": []
   },
   "sheets": [
@@ -676,6 +676,10 @@
     [
       "f7b14e96-f363-41c6-90b3-9bd94a39e254",
       "VFD Enclosure"
+    ],
+    [
+      "b4e88c76-d553-44d8-aeeb-aa4b7ae1f43a",
+      "Original Spindle Controller"
     ]
   ],
   "text_variables": {},
