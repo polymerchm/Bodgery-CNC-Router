@@ -5630,6 +5630,16 @@
 		)
 		(uuid "09ac25bd-4f7f-42f1-8764-78c62e24144e")
 	)
+	(text "Connected to FOB GND"
+		(exclude_from_sim no)
+		(at 194.31 193.294 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+		)
+		(uuid "0a1a652b-e470-407d-bc16-a6ec4b5bd7b2")
+	)
 	(text "TechoCNC Controller\nCable"
 		(exclude_from_sim no)
 		(at 150.368 210.566 0)
@@ -5764,16 +5774,6 @@
 		)
 		(uuid "330a8b47-316d-498d-857d-68ea631d9342")
 	)
-	(text "Unused"
-		(exclude_from_sim no)
-		(at 139.954 85.852 0)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-		)
-		(uuid "3516ef69-6f12-43b6-8d15-0f99c3eb2788")
-	)
 	(text "Green Wire"
 		(exclude_from_sim no)
 		(at 185.42 247.65 0)
@@ -5899,6 +5899,16 @@
 			)
 		)
 		(uuid "6740ebd2-7e19-4f49-9595-7493545d0c3e")
+	)
+	(text "FOB \"ON Signal\""
+		(exclude_from_sim no)
+		(at 168.402 181.864 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+		)
+		(uuid "6cb5fbc5-6df8-496a-83ea-12082ed5cf26")
 	)
 	(text "Orange Wire"
 		(exclude_from_sim no)
@@ -6275,6 +6285,16 @@
 		)
 		(uuid "d7da14e0-353f-48b0-bfa3-fac9e8f338be")
 	)
+	(text "Relay #3"
+		(exclude_from_sim no)
+		(at 116.332 86.106 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+		)
+		(uuid "deaf7613-49c5-4cd9-b1bd-40f71d552224")
+	)
 	(text "Yellow Wire"
 		(exclude_from_sim no)
 		(at 39.37 244.348 90)
@@ -6296,6 +6316,16 @@
 		)
 		(uuid "e618559a-006d-44e1-b66d-7c4a60ab8281")
 	)
+	(text "Connected to FOB \"Input\""
+		(exclude_from_sim no)
+		(at 194.564 164.846 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+		)
+		(uuid "e6843bad-fb6a-4695-822e-e154a72598a8")
+	)
 	(text "Green Wire"
 		(exclude_from_sim no)
 		(at 98.806 113.03 0)
@@ -6309,7 +6339,7 @@
 	)
 	(text "Relay #4"
 		(exclude_from_sim no)
-		(at 115.824 88.646 0)
+		(at 203.454 183.896 0)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -6523,10 +6553,6 @@
 		(uuid "e428b7a8-e9ba-465f-9e37-758cf931f911")
 	)
 	(no_connect
-		(at 128.27 77.47)
-		(uuid "020658e6-4eb3-4842-b82e-89f052770bff")
-	)
-	(no_connect
 		(at 246.38 124.46)
 		(uuid "0a7ea625-c7d6-4112-87d6-60837bb82181")
 	)
@@ -6559,10 +6585,6 @@
 		(uuid "6a07f79a-c5a2-4e8e-8e47-0d65b56bbda5")
 	)
 	(no_connect
-		(at 125.73 92.71)
-		(uuid "6cbe5492-83c1-490b-a3cf-166dc1b62099")
-	)
-	(no_connect
 		(at 241.3 31.75)
 		(uuid "6f0462c9-c989-4a54-ab8a-95cdb98a48c3")
 	)
@@ -6579,7 +6601,7 @@
 		(uuid "7444da3a-94f3-441e-8a5b-e01ae1ea3f31")
 	)
 	(no_connect
-		(at 123.19 77.47)
+		(at 210.82 172.72)
 		(uuid "a0da9bab-8758-40dd-bc6d-ba57d7c733e9")
 	)
 	(no_connect
@@ -6733,6 +6755,16 @@
 			(type default)
 		)
 		(uuid "21c3d77f-e53a-450b-abdb-4a4dcc734261")
+	)
+	(wire
+		(pts
+			(xy 284.48 77.0374) (xy 284.48 160.02)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "2319266b-2b12-4c67-9c3d-9765eec27411")
 	)
 	(wire
 		(pts
@@ -7496,6 +7528,16 @@
 	)
 	(wire
 		(pts
+			(xy 215.9 167.64) (xy 215.9 172.72)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "79e4c92b-6d3b-48c4-bcaa-1b70ed3caeb5")
+	)
+	(wire
+		(pts
 			(xy 194.056 61.6367) (xy 176.53 61.6367)
 		)
 		(stroke
@@ -7616,6 +7658,16 @@
 	)
 	(wire
 		(pts
+			(xy 227.076 77.0374) (xy 284.48 77.0374)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "845ec80c-b74d-4196-a73a-527cfdac0aa0")
+	)
+	(wire
+		(pts
 			(xy 186.5071 106.68) (xy 257.81 106.68)
 		)
 		(stroke
@@ -7693,6 +7745,16 @@
 			(type default)
 		)
 		(uuid "90ea1c2a-b5e5-4a1b-bc54-5fc0a8822cd2")
+	)
+	(wire
+		(pts
+			(xy 176.53 190.5) (xy 213.36 190.5)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "928c3172-fb96-4c8a-a754-50899773e419")
 	)
 	(wire
 		(pts
@@ -7864,6 +7926,16 @@
 		)
 		(uuid "b41b568f-aefe-4e8b-b042-5443d66cd1e4")
 	)
+	(wire
+		(pts
+			(xy 176.53 167.64) (xy 215.9 167.64)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "b5fd5dd1-e0d4-44fc-ab54-0f5eb1fe8f8b")
+	)
 	(polyline
 		(pts
 			(xy 212.09 81.28) (xy 212.09 85.09)
@@ -7923,6 +7995,16 @@
 			(type default)
 		)
 		(uuid "b9d28eef-b65d-4b06-91f0-608bb9557305")
+	)
+	(wire
+		(pts
+			(xy 213.36 190.5) (xy 213.36 187.96)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "ba120205-37a4-4272-906b-4e9504e2dc9e")
 	)
 	(wire
 		(pts
@@ -8276,6 +8358,16 @@
 	)
 	(wire
 		(pts
+			(xy 176.53 182.88) (xy 176.53 190.5)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "e26701c8-84eb-427d-8c75-f19aff1de21b")
+	)
+	(wire
+		(pts
 			(xy 39.37 109.22) (xy 266.7 109.22)
 		)
 		(stroke
@@ -8303,6 +8395,16 @@
 			(type default)
 		)
 		(uuid "e3d9bb5c-4690-495c-bd93-9925e79f70dd")
+	)
+	(wire
+		(pts
+			(xy 176.53 180.34) (xy 176.53 167.64)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "e5b03766-359e-4438-b04c-e23e64524301")
 	)
 	(wire
 		(pts
@@ -9132,6 +9234,88 @@
 			(project "Spindle_Controller"
 				(path "/10c7a81d-d8e0-4023-94dc-af5199d847de"
 					(reference "#PWR03")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Connector:LEMO2")
+		(at 184.15 180.34 0)
+		(mirror x)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(uuid "28b1b164-906b-4d4e-983b-4847a720fd42")
+		(property "Reference" "J27"
+			(at 188.976 182.8801 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "GX12-2"
+			(at 183.5785 175.26 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at 184.15 181.61 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 184.15 181.61 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "2-pin LEMO connector"
+			(at 184.15 180.34 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "2"
+			(uuid "5c33e276-9e98-4872-92cd-9a8c584c56cf")
+		)
+		(pin "1"
+			(uuid "3ea0a40a-89ac-4315-9b66-934cb297bf5f")
+		)
+		(instances
+			(project "Spindle_Controller"
+				(path "/10c7a81d-d8e0-4023-94dc-af5199d847de"
+					(reference "J27")
 					(unit 1)
 				)
 			)
@@ -11851,7 +12035,7 @@
 	(symbol
 		(lib_name "JQC-3FF-005-1Z_1")
 		(lib_id "Relay:JQC-3FF-005-1Z")
-		(at 120.65 85.09 0)
+		(at 208.28 180.34 0)
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -11862,7 +12046,7 @@
 		(fields_autoplaced yes)
 		(uuid "d95fd458-0955-4626-8b8f-89c0caac57b7")
 		(property "Reference" "K2"
-			(at 132.08 83.8199 0)
+			(at 219.71 179.0699 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -11874,7 +12058,7 @@
 			)
 		)
 		(property "Value" "JQC-3FF-005-1Z"
-			(at 132.08 86.3599 0)
+			(at 219.71 181.6099 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -11886,7 +12070,7 @@
 			)
 		)
 		(property "Footprint" "Relay_THT:Relay_SPDT_Hongfa_JQC-3FF_0XX-1Z"
-			(at 132.08 86.36 0)
+			(at 219.71 181.61 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -11898,7 +12082,7 @@
 			)
 		)
 		(property "Datasheet" "https://www.digikey.com/htmldatasheets/production/2071105/0/0/1/JQC-3FF.pdf"
-			(at 120.65 85.09 0)
+			(at 208.28 180.34 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -11909,7 +12093,7 @@
 			)
 		)
 		(property "Description" "Subminiature High Power SPDT Relay, 5V Coil nom. 0.36W, 10A switching current, max 10A@277VAC/28VDC"
-			(at 120.65 85.09 0)
+			(at 208.28 180.34 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)

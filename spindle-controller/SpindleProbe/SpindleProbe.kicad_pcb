@@ -2764,6 +2764,14 @@
 		(uuid "bc078eab-0933-4f97-b16c-abae31c6dc91")
 	)
 	(segment
+		(start 142 80.5)
+		(end 141.81 80.69)
+		(width 1)
+		(layer "F.Cu")
+		(net "unconnected-(U1-NULL-Pad1)")
+		(uuid "df141c78-9c82-496c-accd-dc7697c0392f")
+	)
+	(segment
 		(start 141.68 83.5)
 		(end 139.27 81.09)
 		(width 1)
@@ -2930,14 +2938,6 @@
 		(layer "F.Cu")
 		(net "Net-(H7-Pad1)")
 		(uuid "df690fcb-ff9f-4e2e-8d1a-e92ea0154391")
-	)
-	(segment
-		(start 142 80.5)
-		(end 141.81 80.69)
-		(width 1)
-		(layer "F.Cu")
-		(net "unconnected-(U1-NULL-Pad1)")
-		(uuid "df141c78-9c82-496c-accd-dc7697c0392f")
 	)
 	(zone
 		(net "/GND")

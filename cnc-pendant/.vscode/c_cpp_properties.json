@@ -4,9 +4,11 @@
       "name": "ESP-IDF",
       "compilerPath": "",
       "compileCommands": "${config:idf.buildPath}/compile_commands.json",
-      "intelliSenseMode": "gcc-x86",
+      "intelliSenseMode": "gcc-arm",
       "includePath": [
-        "${workspaceFolder}/**"
+        "${workspaceFolder}/**",
+        "/Users/spollack/.espressif/v6.1/esp-idf/components/**",
+        "/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include"
       ],
       "browse": {
         "path": [
