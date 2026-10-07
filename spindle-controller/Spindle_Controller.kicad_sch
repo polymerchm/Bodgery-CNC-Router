@@ -6177,6 +6177,18 @@
 		)
 		(uuid "b0bcf39d-c9a1-4467-9e6e-9b385e2ab955")
 	)
+	(text "(Part of I2C relay board)\n"
+		(exclude_from_sim no)
+		(at 196.342 196.596 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(thickness 0.254)
+				(bold yes)
+			)
+		)
+		(uuid "b2616574-83cd-4631-b1b8-3d1752970579")
+	)
 	(text "Red Wire"
 		(exclude_from_sim no)
 		(at 40.132 223.266 90)
@@ -6240,6 +6252,16 @@
 			)
 		)
 		(uuid "cdad6e5d-92ce-4758-bf31-c0fa604b49b1")
+	)
+	(text "Relay #3"
+		(exclude_from_sim no)
+		(at 82.804 230.886 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+		)
+		(uuid "d08625a0-ada6-411f-8c26-16ac21766cfa")
 	)
 	(text "White Wire"
 		(exclude_from_sim no)
