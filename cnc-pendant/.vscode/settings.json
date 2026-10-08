@@ -22,8 +22,8 @@
   "idf.openOcdConfigs": [
     "board/esp32s3-builtin.cfg"
   ],
-  "idf.port": "detect",
-  "idf.currentSetup": "/Users/spollack/.espressif/v6.1/esp-idf",
+  "idf.port": "/dev/tty.usbmodem5C630547891",
+  "idf.currentSetup": "/Users/spollack/.espressif/v6.0.1/esp-idf",
   "idf.customExtraVars": {
     "IDF_TARGET": "esp32s3"
   },
@@ -32,5 +32,6 @@
     "--background-index",
     "--query-driver=**",
     "--compile-commands-dir=/Users/spollack/programming/bodgery/Bodgery-CNC-Router/cnc-pendant/build"
-  ]
+  ],
+  "idf.flashType": "UART"
 }

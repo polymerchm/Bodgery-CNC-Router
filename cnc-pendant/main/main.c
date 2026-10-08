@@ -13,8 +13,8 @@
 #include "class/hid/hid_device.h"
 #include "driver/gpio.h"
 
-#define APP_BUTTON (GPIO_NUM_0) // Use BOOT signal by default
-static const char *TAG = "example";
+
+static const char *TAG = "CNC_PENDANT";
 
 /* Flag to indicate if the host has suspended the USB bus */
 static bool suspended = false;
@@ -93,48 +93,7 @@ void tud_hid_set_report_cb(uint8_t instance, uint8_t report_id, hid_report_type_
 
 /********* Application ***************/
 
-typedef enum {
-    MOUSE_DIR_RIGHT,
-    MOUSE_DIR_DOWN,
-    MOUSE_DIR_LEFT,
-    MOUSE_DIR_UP,
-    MOUSE_DIR_MAX,
-} mouse_dir_t;
 
-#define DISTANCE_MAX        125
-#define DELTA_SCALAR        5
-
-static void mouse_draw_square_next_delta(int8_t *delta_x_ret, int8_t *delta_y_ret)
-{
-    static mouse_dir_t cur_dir = MOUSE_DIR_RIGHT;
-    static uint32_t distance = 0;
-
-    // Calculate next delta
-    if (cur_dir == MOUSE_DIR_RIGHT) {
-        *delta_x_ret = DELTA_SCALAR;
-        *delta_y_ret = 0;
-    } else if (cur_dir == MOUSE_DIR_DOWN) {
-        *delta_x_ret = 0;
-        *delta_y_ret = DELTA_SCALAR;
-    } else if (cur_dir == MOUSE_DIR_LEFT) {
-        *delta_x_ret = -DELTA_SCALAR;
-        *delta_y_ret = 0;
-    } else if (cur_dir == MOUSE_DIR_UP) {
-        *delta_x_ret = 0;
-        *delta_y_ret = -DELTA_SCALAR;
-    }
-
-    // Update cumulative distance for current direction
-    distance += DELTA_SCALAR;
-    // Check if we need to change direction
-    if (distance >= DISTANCE_MAX) {
-        distance = 0;
-        cur_dir++;
-        if (cur_dir == MOUSE_DIR_MAX) {
-            cur_dir = 0;
-        }
-    }
-}
 
 static void app_send_hid_demo(void)
 {
@@ -144,17 +103,6 @@ static void app_send_hid_demo(void)
     tud_hid_keyboard_report(HID_ITF_PROTOCOL_KEYBOARD, 0, keycode);
     vTaskDelay(pdMS_TO_TICKS(50));
     tud_hid_keyboard_report(HID_ITF_PROTOCOL_KEYBOARD, 0, NULL);
-
-    // Mouse output: Move mouse cursor in square trajectory
-    ESP_LOGI(TAG, "Sending Mouse report");
-    int8_t delta_x;
-    int8_t delta_y;
-    for (int i = 0; i < (DISTANCE_MAX / DELTA_SCALAR) * 4; i++) {
-        // Get the next x and y delta in the draw square pattern
-        mouse_draw_square_next_delta(&delta_x, &delta_y);
-        tud_hid_mouse_report(HID_ITF_PROTOCOL_MOUSE, 0x00, delta_x, delta_y, 0, 0);
-        vTaskDelay(pdMS_TO_TICKS(20));
-    }
 }
 
 void tud_suspend_cb(bool remote_wakeup_en)
@@ -175,17 +123,62 @@ void tud_resume_cb(void)
     suspended = false;
 }
 
+typedef enum  {
+    PLUS_X = 0,
+    MINUS_X,
+    PLUS_Y,
+    MINUS_Y,
+    PLUS_Z,
+    MINUS_Z,
+    STEP,
+    CONTINUOUS,
+    ABORT,
+    BUTTON_COUNT
+} button_t;
+
+typedef struct {
+    int button_id;
+    int gpio_num;
+} button_data;
+
+
+
+const button_data buttons[] = {
+    {.button_id = PLUS_X, .gpio_num = GPIO_NUM_10},
+    {.button_id = MINUS_X, .gpio_num = GPIO_NUM_11},
+    {.button_id = PLUS_Y, .gpio_num = GPIO_NUM_12},
+    {.button_id = MINUS_Y, .gpio_num = GPIO_NUM_13},
+    {.button_id = PLUS_Z, .gpio_num = GPIO_NUM_14},
+    {.button_id = MINUS_Z, .gpio_num = GPIO_NUM_15},
+    {.button_id = STEP, .gpio_num = GPIO_NUM_16},
+    {.button_id = CONTINUOUS, .gpio_num = GPIO_NUM_17},
+    {.button_id = ABORT, .gpio_num = GPIO_NUM_18}
+};
+
+gpio_config_t button_config_array[BUTTON_COUNT];
+
 void app_main(void)
 {
+    button_t current_button;
+    gpio_config_t current_config;
+
+
     // Initialize button that will trigger HID reports
-    const gpio_config_t boot_button_config = {
-        .pin_bit_mask = BIT64(APP_BUTTON),
+    for (int i = 0; i < BUTTON_COUNT; i++) {
+       current_button = (button_t) i;
+
+
+   
+        current_config = {
+        .pin_bit_mask = BIT64(current_button),
         .mode = GPIO_MODE_INPUT,
         .intr_type = GPIO_INTR_DISABLE,
         .pull_up_en = GPIO_PULLUP_ENABLE,
         .pull_down_en = GPIO_PULLDOWN_DISABLE,
     };
     ESP_ERROR_CHECK(gpio_config(&boot_button_config));
+}   
+    
 
     ESP_LOGI(TAG, "USB initialization");
     tinyusb_config_t tusb_cfg = TINYUSB_DEFAULT_CONFIG();
