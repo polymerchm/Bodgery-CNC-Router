@@ -4,13 +4,15 @@ The planned device will use a Freenove ESP32-S3 with an OTG usb connector.
 Case will have a USB-A connector (SparkFun USB Type A Female Breakout).   <br>Get data and power from Dell computer.
 
 
-uses momentary contact buttons for:
+Uses momentary capacitive  buttons (MPR121, I2C) for:
  - X,Y and Z (may use a  multiposition switch)
  - Home (all) (with confirm)
  - Z Touch (with confirm)
  - Cancel both for confirm and to stop a Home or Z-Touch
  - Continuous
  - Step
+
+ The IRQ line from the MPR121 will trigger a task to button status change.
 
  There will be LED to indicate Continuous or Stop mode
 

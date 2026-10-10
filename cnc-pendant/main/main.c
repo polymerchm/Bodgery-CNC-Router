@@ -12,6 +12,7 @@
 #include "tinyusb_default_config.h"
 #include "class/hid/hid_device.h"
 #include "driver/gpio.h"
+#include "mpr121.h"
 
 
 static const char *TAG = "CNC_PENDANT";
@@ -136,48 +137,11 @@ typedef enum  {
     BUTTON_COUNT
 } button_t;
 
-typedef struct {
-    int button_id;
-    int gpio_num;
-} button_data;
-
-
-
-const button_data buttons[] = {
-    {.button_id = PLUS_X, .gpio_num = GPIO_NUM_10},
-    {.button_id = MINUS_X, .gpio_num = GPIO_NUM_11},
-    {.button_id = PLUS_Y, .gpio_num = GPIO_NUM_12},
-    {.button_id = MINUS_Y, .gpio_num = GPIO_NUM_13},
-    {.button_id = PLUS_Z, .gpio_num = GPIO_NUM_14},
-    {.button_id = MINUS_Z, .gpio_num = GPIO_NUM_15},
-    {.button_id = STEP, .gpio_num = GPIO_NUM_16},
-    {.button_id = CONTINUOUS, .gpio_num = GPIO_NUM_17},
-    {.button_id = ABORT, .gpio_num = GPIO_NUM_18}
-};
-
-gpio_config_t button_config_array[BUTTON_COUNT];
 
 void app_main(void)
 {
-    button_t current_button;
-    gpio_config_t current_config;
 
 
-    // Initialize button that will trigger HID reports
-    for (int i = 0; i < BUTTON_COUNT; i++) {
-       current_button = (button_t) i;
-
-
-   
-        current_config = {
-        .pin_bit_mask = BIT64(current_button),
-        .mode = GPIO_MODE_INPUT,
-        .intr_type = GPIO_INTR_DISABLE,
-        .pull_up_en = GPIO_PULLUP_ENABLE,
-        .pull_down_en = GPIO_PULLDOWN_DISABLE,
-    };
-    ESP_ERROR_CHECK(gpio_config(&boot_button_config));
-}   
     
 
     ESP_LOGI(TAG, "USB initialization");
@@ -210,7 +174,7 @@ void app_main(void)
                     }
                 }
             }
-            send_hid_data = !gpio_get_level(APP_BUTTON);
+            //send_hid_data = !gpio_get_level(APP_BUTTON);
         }
         vTaskDelay(pdMS_TO_TICKS(100));
     }
