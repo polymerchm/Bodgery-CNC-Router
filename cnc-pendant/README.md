@@ -33,11 +33,21 @@ swap the +Z/-Z entries in `axis_switches[]` for `HID_KEY_KEYPAD_ADD` /
 | Continuous LED  | 11   | Continuous last selected           |
 | Enable LED      | 12   | Pendant is armed (Enable held 3 s) |
 
-Wire each LED through a ~330 ohm current-limiting resistor to GND. All three
-start off at boot. The Step/Continuous LED lights as soon as either mode
-switch is pressed. The Enable LED lights when the 3-second hold arms the
-pendant, and turns off when it's disarmed -- either by holding Enable again
-for 3 s, or instantly by pressing Abort.
+LED brightness is set by `LED_BRIGHTNESS_PERCENT` near the top of `main.c`
+(1 to 100, default 15). The LEDs are PWM-driven by the ESP32-S3's LEDC
+hardware at 5 kHz, with a squared curve so the percentage tracks perceived
+brightness. Raising the resistor value also dims them, if you prefer.
+
+The LEDs are wired **active-low**: 3V3 -> ~330 ohm resistor -> LED anode,
+LED cathode -> GPIO. The firmware pulls the pin LOW to light an LED
+(`LED_ACTIVE_LOW` at the top of `main.c`; set it to 0 if you rewire them
+GPIO -> resistor -> LED -> GND). The pendant boots disarmed with **all LEDs
+dark**. When armed (Enable held 3 s), the Enable LED lights along with the LED
+for the current jog mode (Continuous by default, `DEFAULT_MODE` in `main.c`;
+0 = Step, 1 = Continuous). Pressing Step or Continuous moves the mode LED.
+Disarming -- holding Enable for 3 s again, or instantly by pressing Abort --
+turns every LED off. Mode switches still send their keys while disarmed; only
+the LEDs are gated. No key is sent at boot.
 
 ## Behavior
 
@@ -52,15 +62,16 @@ for 3 s, or instantly by pressing Abort.
   tap (not held) and updates the LEDs; the previous mode's LED turns off.
   Always active.
 - **Enable:** hold continuously for 3 seconds to toggle an internal
-  armed/disarmed flag. **Nothing is sent to the host for this switch** --
-  it only affects this firmware's own state, which Abort force-resets.
-  Releasing before 3 s cancels the attempt. This switch does **not** block
-  or gate the axis or mode switches -- all other buttons work regardless of
-  the armed state.
+  armed/disarmed flag and its LED along with it. **Nothing is sent to the
+  host for this switch** -- it only affects this firmware's own state,
+  which Abort force-resets. Releasing before 3 s cancels the attempt. This
+  switch does **not** block or gate the axis or mode switches -- all other
+  buttons work regardless of the armed state.
 - **Abort:** works immediately on a single press, no hold required. Sends
-  its key tap right away and always forces the armed state to disarmed,
-  regardless of what it was. Treat it like a software e-stop signal; actual
-  motion stopping still depends on how TechnoCNC LC responds to that key.
+  its key tap right away and always forces the armed state (and its LED)
+  to disarmed/off, regardless of what it was. Treat it like a software
+  e-stop signal; actual motion stopping still depends on how TechnoCNC LC
+  responds to that key.
 
 Change any pin, key, or timing at the top of `main/main.c`
 (`axis_switches[]`, `mode_switches[]`, `ENABLE_*`, `ABORT_*`,

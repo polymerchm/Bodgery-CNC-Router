@@ -32,21 +32,24 @@
  *                            off. Always active (no enable gating).
  *
  *   Enable                   Hold for ENABLE_HOLD_MS (3000 ms) continuously
- *                            to toggle a local armed/disarmed flag. Nothing
- *                            is sent to the host for this switch -- it only
- *                            affects this firmware's own state (used here
- *                            to track what Abort force-resets). Releasing
- *                            before 3 s cancels the attempt.
+ *                            to toggle a local armed/disarmed flag and the
+ *                            enable LED with it. Nothing is sent to the
+ *                            host for this switch -- it only affects this
+ *                            firmware's own state (used here to track what
+ *                            Abort force-resets). Releasing before 3 s
+ *                            cancels the attempt.
  *
  *   Abort                    Acts like an e-stop: a single tap sends its
  *                            key immediately on press, with no hold and no
  *                            delay beyond normal contact debounce, and
- *                            always forces the local armed flag to false.
+ *                            always forces the local armed flag (and its
+ *                            LED) off.
  *
  * All switches wire one leg to their GPIO and the other to GND, using the
- * internal pull-up (no external resistor needed). The two mode LEDs are
- * plain GPIO outputs; wire each through a current-limiting resistor
- * (~330 ohm) to an LED to GND.
+ * internal pull-up (no external resistor needed). All three LEDs (Step,
+ * Continuous, and Enable/armed status) are plain GPIO outputs wired
+ * 3V3 -> ~330 ohm resistor -> LED -> GPIO, so they light when the pin is
+ * driven LOW (see LED_ACTIVE_LOW).
  */
 
 #include <stdint.h>
@@ -56,6 +59,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "driver/gpio.h"
+#include "driver/ledc.h"
 #include "esp_log.h"
 
 #include "tinyusb.h"
@@ -76,19 +80,41 @@ static const char *TAG = "usb_jog";
 #define JOG_REPEAT_DELAY_MS      400   /* hold time before an axis switch starts repeating */
 #define JOG_REPEAT_INTERVAL_MS   60    /* time between repeat taps while an axis switch is held */
 
+/*
+ * Delay helper that always blocks for at least one RTOS tick. ESP-IDF's
+ * default tick rate is 100 Hz (10 ms/tick), so pdMS_TO_TICKS(5) is 0 ticks,
+ * and vTaskDelay(0) does not block -- the main loop would spin, starve the
+ * idle task, and trip the task watchdog.
+ */
+static inline void delay_ms(uint32_t ms)
+{
+    TickType_t ticks = pdMS_TO_TICKS(ms);
+    vTaskDelay(ticks ? ticks : 1);
+}
+
+/* Real duration of one main-loop pass (POLL_MS rounded up to whole ticks). */
+#define POLL_TICKS      (pdMS_TO_TICKS(POLL_MS) ? pdMS_TO_TICKS(POLL_MS) : 1)
+#define POLL_REAL_MS    (POLL_TICKS * portTICK_PERIOD_MS)
+
+/* Consecutive stable polls needed to accept a switch change (rounded up). */
+#define DEBOUNCE_POLLS  ((DEBOUNCE_MS + POLL_REAL_MS - 1) / POLL_REAL_MS)
+
 /* ------------------------------------------------------------------ */
 /* Switch / LED pin configuration -- EDIT TO MATCH YOUR WIRING         */
 /* ------------------------------------------------------------------ */
 
 /*
- * GPIO 4-9 and 15-18 are free on the Freenove ESP32-S3 boards. Avoid GPIO
- * 19/20 (native USB D-/D+), 0/3/45/46 (strapping), 26-37 (flash/PSRAM) and
- * 43/44 (UART0 console). Check your board's pinout diagram if you change
- * any of these.
+ * GPIO 4-9, 10-12, and 15-18 are free on the Freenove ESP32-S3 boards. Avoid
+ * GPIO 19/20 (native USB D-/D+), 0/3/45/46 (strapping), 26-37 (flash/PSRAM)
+ * and 43/44 (UART0 console). Check your board's pinout diagram if you
+ * change any of these.
  */
 
 #define NUM_AXES   6
 #define NUM_MODES  2
+
+/* Index into mode_switches[] lit at boot: 0 = Step, 1 = Continuous. */
+#define DEFAULT_MODE  1
 
 typedef struct {
     gpio_num_t  pin;       /* GPIO, switch to GND, active low */
@@ -123,10 +149,87 @@ static const mode_cfg_t mode_switches[NUM_MODES] = {
     { GPIO_NUM_18, 0, HID_KEY_F9, GPIO_NUM_11, "Continuous" },
 };
 
-
 /* Enable is local only: it toggles an internal armed flag but no key is
  * ever sent to the host for it -- see the enable handling in app_main(). */
 #define ENABLE_PIN      GPIO_NUM_8
+#define ENABLE_LED_PIN  GPIO_NUM_12   /* lit while the pendant is armed/enabled */
+
+/*
+ * LED polarity. Your LEDs are wired 3V3 -> resistor -> LED -> GPIO, so the
+ * pin must be driven LOW to light them (active low). If you ever rewire
+ * them as GPIO -> resistor -> LED -> GND, set this to 0.
+ */
+#define LED_ACTIVE_LOW  1
+
+/*
+ * LED brightness, 1 (dimmest) to 100 (full). The LEDs are driven by the
+ * hardware LEDC PWM peripheral, so this costs the main loop nothing.
+ * Perceived brightness is not linear in duty cycle, so the percentage is
+ * squared (a rough gamma curve): 50 looks about half as bright as 100.
+ */
+#define LED_BRIGHTNESS_PERCENT  3
+
+#define LED_PWM_FREQ_HZ  5000                /* well above visible flicker */
+#define LED_PWM_RES      LEDC_TIMER_10_BIT
+#define LED_PWM_MAX      1023                /* 2^10 - 1 */
+#define LED_ON_DUTY_RAW  ((LED_BRIGHTNESS_PERCENT * LED_BRIGHTNESS_PERCENT * LED_PWM_MAX) / 10000)
+#define LED_ON_DUTY      (LED_ON_DUTY_RAW > 0 ? LED_ON_DUTY_RAW : 1)
+
+_Static_assert(LED_BRIGHTNESS_PERCENT >= 1 && LED_BRIGHTNESS_PERCENT <= 100,
+               "LED_BRIGHTNESS_PERCENT must be 1..100");
+
+/* One LEDC channel per LED: channel 0 = Enable LED, 1.. = mode LEDs. */
+static ledc_channel_t led_channel(gpio_num_t pin)
+{
+    for (int i = 0; i < NUM_MODES; i++) {
+        if (mode_switches[i].led_pin == pin) {
+            return (ledc_channel_t)(LEDC_CHANNEL_1 + i);
+        }
+    }
+    return LEDC_CHANNEL_0;   /* ENABLE_LED_PIN */
+}
+
+/* Single place that turns an LED on (at LED_BRIGHTNESS_PERCENT) or off.
+ * Polarity is handled by the LEDC output-invert flag in leds_init(). */
+static inline void led_write(gpio_num_t pin, bool on)
+{
+    ledc_channel_t ch = led_channel(pin);
+    ledc_set_duty(LEDC_LOW_SPEED_MODE, ch, on ? LED_ON_DUTY : 0);
+    ledc_update_duty(LEDC_LOW_SPEED_MODE, ch);
+}
+
+/* Start PWM on all three LED pins, all off. */
+static void leds_init(void)
+{
+    const ledc_timer_config_t timer = {
+        .speed_mode      = LEDC_LOW_SPEED_MODE,
+        .duty_resolution = LED_PWM_RES,
+        .timer_num       = LEDC_TIMER_0,
+        .freq_hz         = LED_PWM_FREQ_HZ,
+        .clk_cfg         = LEDC_AUTO_CLK,
+    };
+    ESP_ERROR_CHECK(ledc_timer_config(&timer));
+
+    gpio_num_t pins[NUM_MODES + 1];
+    pins[0] = ENABLE_LED_PIN;
+    for (int i = 0; i < NUM_MODES; i++) {
+        pins[i + 1] = mode_switches[i].led_pin;
+    }
+
+    for (int i = 0; i < NUM_MODES + 1; i++) {
+        const ledc_channel_config_t ch = {
+            .gpio_num   = pins[i],
+            .speed_mode = LEDC_LOW_SPEED_MODE,
+            .channel    = led_channel(pins[i]),
+            .intr_type  = LEDC_INTR_DISABLE,
+            .timer_sel  = LEDC_TIMER_0,
+            .duty       = 0,                       /* off */
+            .hpoint     = 0,
+            .flags.output_invert = LED_ACTIVE_LOW, /* active-low LEDs: 0 duty = pin held high = off */
+        };
+        ESP_ERROR_CHECK(ledc_channel_config(&ch));
+    }
+}
 
 #define ABORT_PIN       GPIO_NUM_9
 #define ABORT_MODIFIER  0
@@ -140,13 +243,13 @@ static const uint8_t hid_report_descriptor[] = {
     TUD_HID_REPORT_DESC_KEYBOARD()   /* no report ID, standard 8-byte boot report */
 };
 
-static const char *hid_string_descriptor[] = {
-    (char[]){ 0x09, 0x04 },     /* 0: language = English (US) */
-    "ESP32-S3",                 /* 1: manufacturer */
-    "CNC Jog Pendant",          /* 2: product */
-    "123456",                   /* 3: serial */
-    "CNC Jog Pendant HID",      /* 4: HID interface */
-};
+/*
+ * No custom string table: esp_tinyusb supplies the manufacturer / product /
+ * serial strings itself (from Kconfig). A custom table whose entry count
+ * isn't also given to the library leaves the string slots NULL, and the
+ * host's first string request then crashes the firmware. The HID interface
+ * therefore uses string index 0 (= "no string") below.
+ */
 
 #define TUSB_DESC_TOTAL_LEN (TUD_CONFIG_DESC_LEN + CFG_TUD_HID * TUD_HID_DESC_LEN)
 
@@ -156,7 +259,7 @@ static const uint8_t hid_configuration_descriptor[] = {
                           TUSB_DESC_CONFIG_ATT_REMOTE_WAKEUP, 100),
 
     /* interface, string index, boot protocol, report desc len, EP in addr, size, interval (ms) */
-    TUD_HID_DESCRIPTOR(0, 4, false, sizeof(hid_report_descriptor), 0x81, 16, 10),
+    TUD_HID_DESCRIPTOR(0, 0, false, sizeof(hid_report_descriptor), 0x81, 16, 10),
 };
 
 /* TinyUSB HID callbacks (required) */
@@ -196,11 +299,11 @@ static void send_report(uint8_t modifier, const uint8_t keys[6])
 
     if (tud_suspended()) {
         tud_remote_wakeup();              /* wake a sleeping host */
-        vTaskDelay(pdMS_TO_TICKS(50));
+        delay_ms(50);
     }
 
     for (int i = 0; i < 50 && !tud_hid_ready(); i++) {
-        vTaskDelay(pdMS_TO_TICKS(2));
+        delay_ms(2);
     }
     if (!tud_hid_ready()) {
         ESP_LOGW(TAG, "HID endpoint busy, dropping report");
@@ -218,9 +321,10 @@ static void send_report(uint8_t modifier, const uint8_t keys[6])
  */
 static void send_tap(uint8_t modifier, uint8_t keycode)
 {
+    ESP_LOGI(TAG, "send key: HID usage 0x%02X, modifier 0x%02X", keycode, modifier);
     uint8_t keys[6] = { keycode, 0, 0, 0, 0, 0 };
     send_report(modifier, keys);
-    vTaskDelay(pdMS_TO_TICKS(TAP_DOWN_MS));
+    delay_ms(TAP_DOWN_MS);
 
     uint8_t none[6] = { 0 };
     send_report(0, none);
@@ -249,29 +353,20 @@ static void switches_init(void)
     };
     ESP_ERROR_CHECK(gpio_config(&in_cfg));
 
-    uint64_t led_mask = 0;
-    for (int i = 0; i < NUM_MODES; i++) {
-        led_mask |= 1ULL << mode_switches[i].led_pin;
-    }
-
-    gpio_config_t out_cfg = {
-        .pin_bit_mask = led_mask,
-        .mode         = GPIO_MODE_OUTPUT,
-        .pull_up_en   = GPIO_PULLUP_DISABLE,
-        .pull_down_en = GPIO_PULLDOWN_DISABLE,
-        .intr_type    = GPIO_INTR_DISABLE,
-    };
-    ESP_ERROR_CHECK(gpio_config(&out_cfg));
-
-    for (int i = 0; i < NUM_MODES; i++) {
-        gpio_set_level(mode_switches[i].led_pin, 0);   /* both off until a mode is picked */
-    }
+    /* LEDs: PWM-driven, all off (disarmed) until the pendant is armed. */
+    leds_init();
 }
 
-static void set_mode_leds(int selected_mode)
+/*
+ * Update all three LEDs from the pendant state. When disarmed, every LED is
+ * dark. When armed, the Enable LED is lit and the LED for the current jog
+ * mode is lit.
+ */
+static void update_leds(bool armed, int selected_mode)
 {
+    led_write(ENABLE_LED_PIN, armed);
     for (int i = 0; i < NUM_MODES; i++) {
-        gpio_set_level(mode_switches[i].led_pin, (i == selected_mode) ? 1 : 0);
+        led_write(mode_switches[i].led_pin, armed && (i == selected_mode));
     }
 }
 
@@ -287,19 +382,16 @@ void app_main(void)
 
     /* esp_tinyusb 2.x/3.x API: start from the library's own defaults, then
      * override only the descriptors we actually customize. The device
-     * descriptor is left at its default (NULL), which uses the
-     * manufacturer/product/serial strings from Kconfig combined with our
-     * own string array below for anything beyond those (our HID interface
-     * name at string index 4). */
+     * descriptor and the manufacturer/product/serial strings are left at
+     * the library defaults (see the string note above). */
     tinyusb_config_t tusb_cfg = TINYUSB_DEFAULT_CONFIG();
-    tusb_cfg.descriptor.string            = hid_string_descriptor;
     tusb_cfg.descriptor.full_speed_config = hid_configuration_descriptor;
 #if (TUD_OPT_HIGH_SPEED)
     tusb_cfg.descriptor.high_speed_config = hid_configuration_descriptor;
 #endif
     ESP_ERROR_CHECK(tinyusb_driver_install(&tusb_cfg));
 
-    const uint8_t needed = DEBOUNCE_MS / POLL_MS;
+    const uint8_t needed = DEBOUNCE_POLLS;
 
     /* Axis switches: debounced hold state drives a tap-then-repeat stream. */
     bool       axis_pressed[NUM_AXES]    = { false };
@@ -309,7 +401,11 @@ void app_main(void)
     /* Mode switches: debounced edge -> one-shot tap + LED update. */
     bool    mode_stable[NUM_MODES]  = { false };
     uint8_t mode_counter[NUM_MODES] = { 0 };
-    int     current_mode            = -1;   /* -1 = none selected yet */
+    /* Boot default: Continuous, the machine's normal state. Nothing is sent
+     * to the host, since TechnoCNC is already in that mode. The pendant
+     * boots disarmed, so every LED is dark until it is armed. */
+    int     current_mode            = DEFAULT_MODE;
+    update_leds(false, current_mode);
 
     /* Enable switch: debounce, then a continuous 3 s hold toggles "armed". */
     bool       enable_stable  = false;
@@ -322,8 +418,31 @@ void app_main(void)
     bool    abort_stable  = false;
     uint8_t abort_counter = 0;
 
+    /* USB diagnostics: report host-connection state changes on the serial
+     * monitor, and a periodic heartbeat while no host has configured us. */
+    bool       usb_was_mounted   = false;
+    bool       usb_was_suspended = false;
+    TickType_t usb_last_note     = xTaskGetTickCount();
+    ESP_LOGI(TAG, "TinyUSB started; waiting for host to enumerate");
+
     while (1) {
         TickType_t now = xTaskGetTickCount();
+
+        bool usb_mounted   = tud_mounted();
+        bool usb_suspended = tud_suspended();
+        if (usb_mounted != usb_was_mounted) {
+            usb_was_mounted = usb_mounted;
+            ESP_LOGI(TAG, "USB %s", usb_mounted ? "MOUNTED (host configured the device)"
+                                                : "NOT mounted (host disconnected/reset)");
+        }
+        if (usb_suspended != usb_was_suspended) {
+            usb_was_suspended = usb_suspended;
+            ESP_LOGI(TAG, "USB %s", usb_suspended ? "suspended by host" : "resumed");
+        }
+        if (!usb_mounted && (now - usb_last_note) >= pdMS_TO_TICKS(5000)) {
+            usb_last_note = now;
+            ESP_LOGW(TAG, "Still no USB host configuration (cable/port/accessory approval?)");
+        }
 
         /* --- axis switches: tap on press, then a repeating stream while held --- */
         for (int i = 0; i < NUM_AXES; i++) {
@@ -365,7 +484,7 @@ void app_main(void)
 
                 if (raw) {   /* debounced press edge */
                     current_mode = i;
-                    set_mode_leds(current_mode);
+                    update_leds(armed, current_mode);
                     ESP_LOGI(TAG, "Mode -> %s", mode_switches[i].name);
                     send_tap(mode_switches[i].modifier, mode_switches[i].keycode);
                 }
@@ -394,6 +513,7 @@ void app_main(void)
             if (held_ms >= ENABLE_HOLD_MS) {
                 armed         = !armed;
                 hold_consumed = true;
+                update_leds(armed, current_mode);
                 ESP_LOGI(TAG, "Enable switch held 3 s: %s (local only, nothing sent to host)",
                          armed ? "ARMED" : "DISARMED");
                 /* No send_tap() here: per spec, Enable is never sent to the controller. */
@@ -411,11 +531,12 @@ void app_main(void)
 
             if (abort_raw) {   /* debounced press edge: act immediately, no delay */
                 armed = false;
+                update_leds(false, current_mode);
                 ESP_LOGW(TAG, "ABORT pressed -- forcing DISARMED");
                 send_tap(ABORT_MODIFIER, ABORT_KEYCODE);
             }
         }
 
-        vTaskDelay(pdMS_TO_TICKS(POLL_MS));
+        vTaskDelay(POLL_TICKS);
     }
 }

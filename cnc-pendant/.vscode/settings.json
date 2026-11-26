@@ -23,7 +23,7 @@
     "board/esp32s3-builtin.cfg"
   ],
   "idf.port": "/dev/tty.usbmodem5C630547891",
-  "idf.currentSetup": "/Users/spollack/.espressif/v6.0.1/esp-idf",
+  "idf.currentSetup": "/Users/spollack/.espressif/v6.0.3/esp-idf",
   "idf.customExtraVars": {
     "IDF_TARGET": "esp32s3"
   },

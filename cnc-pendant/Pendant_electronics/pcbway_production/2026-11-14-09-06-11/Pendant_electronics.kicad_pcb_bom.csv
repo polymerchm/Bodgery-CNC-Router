@@ -1,0 +1,6 @@
+﻿Designator,Quantity,Value,Footprint,Package,MPN,DNP,Mount_Type,Description,KiLib_Generator,Sim.Pins
+"D1, D2, D3",3,LED,LED_D5.0mm,,,,tht,Light emitting diode,LED/THT,1=K 2=A
+P1,1,USB_C_Plug_USB2.0,FanPinHeader_1x04_P2.54mm_Vertical,,,,tht,USB 2.0-only Type-C Plug connector,,
+"R1, R2, R3",3,220,R_Axial_DIN0204_L3.6mm_D1.6mm_P5.08mm_Horizontal,,,,tht,Resistor,resistor/THT,
+"SW1, SW10, SW2, SW3, SW4, SW5, SW6, SW7, SW8, SW9",10,SW_SPST,SW_Cherry_MX_1.00u_Plate,,,,tht,Single Pole Single Throw (SPST) switch,,
+U1,1,Freenove_ESP32-S3-WROOM,Freenove_ESP32-S3-WROOM,,,Yes,tht,"Freenove ESP32-S3-WROOM dev board (FNK0085), 2x20 pin headers, 25.4 mm row spacing",,

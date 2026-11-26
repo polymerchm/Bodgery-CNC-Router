@@ -1,4 +1,8 @@
-# This file was generated using idf.py save-defconfig. It can be edited manually.
-# Espressif IoT Development Framework (ESP-IDF) Project Minimal Configuration
-#
+# Use: idf.py set-target esp32s3
 CONFIG_TINYUSB_HID_COUNT=1
+CONFIG_TINYUSB_CDC_ENABLED=n
+CONFIG_TINYUSB_MSC_ENABLED=n
+# 1 ms RTOS tick so the 5 ms switch scan and 20 ms debounce are accurate.
+# (main.c also works at the default 100 Hz; this just gives finer timing.
+# Only applies to a fresh sdkconfig -- delete sdkconfig and rebuild to pick it up.)
+CONFIG_FREERTOS_HZ=1000
